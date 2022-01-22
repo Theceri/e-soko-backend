@@ -15,6 +15,7 @@ consumer_secret = 'NBlarPMldvJmJUPm'
 # the business short code is the one provided in the Lipa Na M-Pesa Online API section of the documentation (https://developer.safaricom.co.ke/Documentation#:~:text=%C2%A0%22BusinessShortCode%22%3A%22174379%22%2C%C2%A0%20%C2%A0)
 business_short_code = "174379"
 
+# found by going to https://developer.safaricom.co.ke/APIs/MpesaExpressQuery and selecting your app on the right
 passkey = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
 
 def authenticator():
