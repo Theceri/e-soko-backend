@@ -46,8 +46,6 @@ def generate_password():
 
     return decoded_password
 
-
-
 authenticator()
 get_timestamp()
 generate_password()
