@@ -9,15 +9,14 @@ from flask_cors import CORS
 from mpesa import *
 
 app = Flask(__name__)
+
+from configs.base_config import Development, Production, Staging
+app.config.from_object(Development)
+
 alvapi_key = "EZKBB11OQDGS3BGK"
 scheduler = BackgroundScheduler(daemon=True)
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///alphavantage.db"
-# app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:1234@localhost:5432/alphavantage"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 cors = CORS(app, resources={r"*": {"origins": "*"}})
-
-
 class Forex(db.Model):
     __tablename__ = 'forex'
 
@@ -26,6 +25,16 @@ class Forex(db.Model):
     data = db.Column(db.JSON, unique=True)
     created_date = db.Column(db.DateTime, nullable=False, server_default=func.now())
 
+class STKData(db.Model):
+    __tablename__ = 'stkdata'
+
+    id = db.Column(db.Integer, primary_key=True)
+    merchant_request_id = db.Column(db.String(80), nullable=False)
+    checkout_request_id = db.Column(db.String(80), nullable=False)
+    response_code = db.Column(db.String(80), nullable=False)
+    response_description = db.Column(db.String(80), nullable=False)
+    customer_message = db.Column(db.String(80), nullable=False)
+    created_date = db.Column(db.DateTime, nullable=False, server_default=func.now())
 
 @app.before_first_request
 def create_tables():
@@ -69,10 +78,26 @@ def stk_push():
         "AccountReference": account_number,
         "TransactionDesc": "Edwin is shouting at us"
     }
-    r=requests.post(url, json=body, headers=header)
 
-    print(r.json())
-    return "This shit is not working"
+    r = requests.post(url, json=body, headers=header).json()
+
+    # 1. store the response in the database, i.e. the merchant request and the checkout request (make a new model for these)
+    stored_response_data = STKData(merchant_request_id = r['MerchantRequestID'], checkout_request_id = r['CheckoutRequestID'], response_code = r['ResponseCode'], response_description = r['ResponseDescription'], customer_message = r['CustomerMessage'])
+    db.session.add(stored_response_data)
+    db.session.commit()    
+    
+    return r
+
+@app.route("/stkpush/checker", methods=['GET', 'POST'])
+def stk_push_checker():
+    # 2. Change the status code received in step 1
+    pass
+
+# for safaricom
+@app.route("/stkpush/processor", methods=['GET', 'POST'])
+def stk_push_processor():
+    # 3. Check what the user has done. The client shall do a loop every 5 seconds with the checkout request and the merchant request.
+    pass
 
 def request_scheduler():
     # try:
