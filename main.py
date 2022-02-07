@@ -74,12 +74,13 @@ def stk_push():
         "PartyA": phone_number,
         "PartyB": business_short_code,
         "PhoneNumber": phone_number,
-        "CallBackURL": "https://mydomain.com/pat",
+        "CallBackURL": "https://e2ea-197-248-16-215.ngrok.io/stkpush/checker",
         "AccountReference": account_number,
         "TransactionDesc": "Edwin is shouting at us"
     }
 
     r = requests.post(url, json=body, headers=header).json()
+    print(r)
 
     # 1. store the response in the database, i.e. the merchant request and the checkout request (make a new model for these)
     stored_response_data = STKData(merchant_request_id = r['MerchantRequestID'], checkout_request_id = r['CheckoutRequestID'], response_code = r['ResponseCode'], response_description = r['ResponseDescription'], customer_message = r['CustomerMessage'])
@@ -89,9 +90,21 @@ def stk_push():
     return r
 
 @app.route("/stkpush/checker", methods=['GET', 'POST'])
-def stk_push_checker():
+def stk_push_checker():    
     # 2. Change the status code received in step 1
-    pass
+    safaricom_data = request.get_json(force=True)
+    print(safaricom_data)
+    print(type(safaricom_data))
+
+    corresponding_record = STKData.query.filter_by(checkout_request_id = safaricom_data['Body']['stkCallback']['CheckoutRequestID'], merchant_request_id = safaricom_data['Body']['stkCallback']['MerchantRequestID']).first()
+
+    print(corresponding_record)
+
+    corresponding_record.response_code = safaricom_data['Body']['stkCallback']['ResultCode']
+    db.session.add(corresponding_record)
+    db.session.commit()
+
+    return safaricom_data    
 
 # for safaricom
 @app.route("/stkpush/processor", methods=['GET', 'POST'])
